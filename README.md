@@ -1,7 +1,7 @@
-# ETL-Migrator
-ETL implementation for traceability migrator
+# Traceability Model Migrator
+Implementation for traceability model migrator
 
-This project is the implementation for the traceability migrator that can be tested with the case study in this repository. This project basically contains the following executable transformations:
+This project is the ETL-implementation for the traceability migrator that can be tested with the case study in this repository. This project basically contains the following executable transformations:
 
 - /ETLMigrator/model/TraceabilityMigrator.etl is the migrator taking as input the two traceability models and giving in output the migrated one, generated in the gen folder.
 - /ETLMigrator/model/generateModelink.egl and .egx are the code generator to re-generated the updated weaving models to inspect the trace links of the migrated trace model.
