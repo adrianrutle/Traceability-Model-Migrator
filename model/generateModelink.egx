@@ -1,0 +1,7 @@
+rule GenModelink 
+  transform  tracemodel:traceabilityModel!TraceabilityModel {
+  
+  template : "generateModelink.egl"
+  
+  target : "gen/T.modelink"
+}

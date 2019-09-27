@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modelink threeWay="true" forceExeedL="false" forceExeedM="false" forceExeedR="false">
+  <model path="[%=evotracemodel!TraceabilityModel.allInstances().first.trgMM%]" position="LEFT" />
+  <model path="[%=tracemodel.project_path%]/trace/evo/[%=tracemodel.name%].model" position="MIDDLE" />
+  <model path="[%=tracemodel.trgMM%]" position="RIGHT" />
+</modelink>

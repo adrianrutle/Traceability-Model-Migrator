@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.epsilon.egl.eclipse.dt.launching.EglLaunchConfigurationDelegate">
+<booleanAttribute key="appendToFile" value="false"/>
+<listAttribute key="defaultFormatters"/>
+<intAttribute key="generateTo" value="1"/>
+<listAttribute key="models">
+<listEntry value="isMetamodelFileBased=false&#10;name=traceabilityModel&#10;readOnLoad=true&#10;storeOnDisposal=false&#10;aliases=traceabilityModel&#10;cached=true&#10;fileBasedMetamodelUri=&#10;metamodelUri=http\://www.eclipse.org/emf/2002/Ecore,http\://cs.gssi.it/traceabilitymodel/2019&#10;modelUri=platform\:/resource/TraceabilityModel/case-study/evaluation/grafecet2pnml/trace/Grafcet2Petrinet.model&#10;reuseUnmodifiedFileBasedMetamodels=true&#10;type=EMF&#10;modelFile=/TraceabilityModel/case-study/evaluation/grafecet2pnml/trace/Grafcet2Petrinet.model&#10;expand=true&#10;metamodelFile="/>
+<listEntry value="isMetamodelFileBased=false&#10;name=evotracemodel&#10;readOnLoad=true&#10;storeOnDisposal=false&#10;aliases=evotracemodel&#10;cached=false&#10;fileBasedMetamodelUri=&#10;metamodelUri=http\://www.eclipse.org/emf/2002/Ecore,http\://cs.gssi.it/traceabilitymodel/2019&#10;modelUri=platform\:/resource/TraceabilityModel/case-study/evaluation/grafecet2pnml/trace/evo/grafcet2EvoGrafcet.model&#10;reuseUnmodifiedFileBasedMetamodels=true&#10;type=EMF&#10;modelFile=/TraceabilityModel/case-study/evaluation/grafecet2pnml/trace/evo/grafcet2EvoGrafcet.model&#10;expand=true&#10;metamodelFile="/>
+</listAttribute>
+<stringAttribute key="outputFilePath" value=""/>
+<listAttribute key="parameters"/>
+<booleanAttribute key="produceTrace" value="false"/>
+<stringAttribute key="source" value="/ETLMigrator/model/generateModelink.egx"/>
+<stringAttribute key="templateFactoryType" value="org.eclipse.epsilon.egl.EglFileGeneratingTemplateFactory"/>
+<stringAttribute key="traceDestination" value=""/>
+</launchConfiguration>

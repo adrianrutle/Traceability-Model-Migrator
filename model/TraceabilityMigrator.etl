@@ -1,0 +1,339 @@
+pre {
+ "Running Migrator".println();
+ 	var emfTool : new Native("org.eclipse.epsilon.emc.emf.tools.EmfTool");
+}
+
+rule TraceabilityModel
+
+transform tm : traceabilityIN!TraceabilityModel
+  to outtm : traceabilityOUT!TraceabilityModel {
+ 	outtm.name=tm.name;
+	outtm.links::= tm.links;
+ }
+
+rule ClassTraceabilityLinks
+transform tl: traceabilityIN!ClassTraceabilityLink
+to outtl:traceabilityOUT!ClassTraceabilityLink{
+	("Elaborating Trace Link ".concat(tl.name)).println();
+	outtl.name=tl.name;
+	outtl.sourceElem.addAll(tl.sourceElem.getEvo());
+	//outtl should be treated with getEvo too 
+	outtl.targetElem.addAll(tl.targetElem.getTargetEvo());
+	
+}
+/*
+rule TargetElement
+transform inout:traceabilityIN!TargetElement
+to _inout: traceabilityOUT!TargetElement{
+	_inout.varName=inout.varName;
+	_inout.linkedElement=inout.linkedElement;
+	_inout.links::=inout.links;
+}
+*/
+rule FeatureTraceabilityLinks
+transform ftl: traceabilityIN!FeatureTraceabilityLink
+to _ftl: traceabilityOUT!FeatureTraceabilityLink{
+var _string="";
+if(ftl.targetElem.hasProperty("name")){
+_string=ftl.targetElem.name;
+}else{
+_string="";
+}
+("			Elaborating Feature Trace Link with target: ".concat(_string)).println();
+	_ftl.name=ftl.name;
+	_ftl.sourceElem.addAll(ftl.sourceElem.getFeatureEvo());
+	_ftl.targetElem=ftl.targetElem.getTargetFeatureEvo(ftl);
+}
+
+operation OrderedSet<traceabilityIN!SourceElement> getEvo(): Any{
+
+var newsources : OrderedSet<traceabilityOUT!SourceElement>;
+
+	for (et in (evoTrace!ClassTraceabilityLink.allInstances())) { 
+			for (source in self) { 
+			
+			var list=et->collect(tl|tl.sourceElem.linkedElement).flatten();
+			
+				for (linkedEl in list) { 
+				
+					if(emfTool.ecoreUtil.equals(source.linkedElement , linkedEl)){
+						"-->Found ".concat(et.name).concat(" applied to ").concat(source.linkedElement.name).concat(" (Source)").println();
+						if(list.size()>1) {
+						
+							self.first.tracelink.equivalent().comment="This rule should be revised";
+							}
+						var newsource : traceabilityOUT!SourceElement=new traceabilityOUT!SourceElement;
+							
+						for (target in et.targetElem.linkedElement) { 
+							
+							if(source.constraints.size()>0){
+														
+								newsource.linkedElement=source.constraints.checkConstraint(et);
+								
+							}else{
+								newsource.linkedElement=target;
+								newsource.varName=source.varName;
+								newsource.constraints.addAll(source.constraints);
+							}
+							newsources.add(newsource);
+						}
+					}
+				}
+			}
+		}
+		if(newsources.size()>0) return newsources;
+		//copy untouched tracelinks sources
+		for (s in self) {
+		
+				if(s.linkedElement.isDefined()){
+					var newsource : traceabilityOUT!SourceElement=new traceabilityOUT!SourceElement;
+					newsource.varName=s.varName;
+					
+					newsource.linkedElement=s.linkedElement.searchEclassinEvo().ifUndefined(s.linkedElement);
+					newsources.add(newsource);
+				}
+		}
+		return newsources;	
+}
+
+operation traceabilityIN!EClass searchEclassinEvo(): traceabilityIN!EClass{
+	//this method can be further customized to be sure that mathes the exact class
+	return evoMM!EClass.allInstances().select(c|c.name=self.name).first;
+
+}
+
+operation OrderedSet<traceabilityIN!Constraint> checkConstraint(evotrace : Any): Any{
+	for (constraint in self) { 
+	//self.nav
+		for (et in (evoTrace!FeatureTraceabilityLink.allInstances())) {
+			if(et.sourceElem.collect(se|se.constraints).flatten().select(n|emfTool.ecoreUtil.equals(n.nav,constraint.nav) and emfTool.ecoreUtil.equals(n.refConstraint,constraint.refConstraint)).size()>0){
+				"-->Found ".concat(et.name).concat(" applied to ").concat(constraint.nav.name).println();
+						
+				return et.targetElem;
+			}
+		}
+	
+	}
+}
+
+operation OrderedSet<traceabilityIN!SourceElement> getTargetEvo(): Any{
+	var newsources : OrderedSet<traceabilityOUT!TargetElement>;
+
+	for (et in (evoTrace!ClassTraceabilityLink.allInstances())) { 
+			for (source in self) { 
+			
+			var list=et->collect(tl|tl.sourceElem.linkedElement).flatten();
+			
+				for (linkedEl in list) { 
+				
+					if(emfTool.ecoreUtil.equals(source.linkedElement , linkedEl)){
+						"-->Found ".concat(et.name).concat(" applied to ").concat(source.linkedElement.name).println();
+						
+						var newsource : traceabilityOUT!TargetElement=new traceabilityOUT!TargetElement;
+							
+						for (target in et.targetElem.linkedElement) { 
+							newsource.linkedElement=target;
+							newsource.varName=source.varName;
+							newsource.links::=source.links;
+							newsources.add(newsource);
+						}
+					}
+				}
+			}
+		}
+		if(newsources.size()>0) return newsources;
+		//copy untouched tracelinks sources
+		for (s in self) { 
+			var newsource : traceabilityOUT!TargetElement=new traceabilityOUT!TargetElement;
+			newsource.varName=s.varName;
+			
+			newsource.linkedElement=s.linkedElement.searchEclassinEvo().ifUndefined(s.linkedElement);
+			newsource.links::=s.links;
+			newsources.add(newsource);
+		}
+		return newsources;	
+}
+
+operation OrderedSet<traceabilityIN!FeatureSourceElement> getFeatureEvo(): Any{
+
+var newsources : OrderedSet<traceabilityOUT!FeatureSourceElement>;
+var newsource : traceabilityOUT!FeatureSourceElement;
+for(source in self){
+var binding=source.linkedElement;
+
+var patterns=evoTrace!FeatureTraceabilityLink.allInstances()->select(etl|etl.sourceElem->select(se|emfTool.ecoreUtil.equals(se.linkedElement,binding)).size()>0);
+	
+	if(patterns.isDefined() and patterns.size()>0){
+	//patterns.println();
+		for(pattern in patterns){
+		//pattern.sourceElem.constraints.flatten().isEmpty().println();
+		"-->Found ".concat(pattern.name.ifUndefined("pattern with no name in trace model")).concat(" applied on ").concat(binding.name).concat("(Source)").println();
+		
+			newsource=new traceabilityOUT!FeatureSourceElement;
+		
+		for (target in pattern.targetElem) { 
+		if(target.isKindOf(traceabilityIN!EClass)) {
+			//check existing constraints
+			var s=source.tracelink.owner.tracelink.sourceElem.first;
+			newsource.linkedElement=s;
+			var constraint : traceabilityOUT!Constraint=new traceabilityOUT!Constraint;
+			constraint.nav=target;
+			if(source.tracelink.targetElem.etype.isKindOf(traceabilityIN!EEnum)){
+				
+				var newliteral=(source.tracelink.targetElem.etype).eliterals.select(l|l.name==target.name.toLowerCase()).first;
+				constraint.refConstraint=newliteral;
+				newsource.constraints.add(constraint);
+			}
+			
+		}else{
+			newsource.linkedElement=target;	
+		}
+		
+			if(self.nestedElement.size()>0){
+				for (nested in self.nestedElement) { 
+			
+					if(not nested.isEmpty()){
+					
+						//contains a nested element
+						if(target.etype.isKindOf(traceabilityIN!EClass)){
+							if( (target.etype.estructuralFeatures).contains(nested.linkedElement)){
+							//the referenced feature has been moved 
+							
+								var nestedsource : traceabilityOUT!FeatureSourceElement=new traceabilityOUT!FeatureSourceElement;
+								nestedsource.linkedElement=nested.linkedElement;
+								newsource.nestedElement.add(nestedsource);
+							}else{
+							"---->Applied Heuristic for retyping ".concat(target.name).concat(" to ").concat(target.etype.name).println();
+								var nestedsource : traceabilityOUT!FeatureSourceElement=new traceabilityOUT!FeatureSourceElement;
+								//heuristic: first element with same type of the old linked element
+								
+								nestedsource.linkedElement=(target.etype.estructuralFeatures).select(sf|emfTool.ecoreUtil.equals(sf.etype,nested.linkedElement.first.etype)).first;
+								newsource.nestedElement.add(nestedsource);
+							}
+							}
+				}
+			}	
+			}
+		}
+		
+		newsources.add(newsource);
+		}
+
+	}else if(binding.isKindOf(traceabilityIN!EReference) ){
+	
+	//checking evolutions for the type of the reference
+					for(tl in evoTrace!ClassTraceabilityLink.allInstances()->select(ctl|ctl.sourceElem->select(s|emfTool.ecoreUtil.equals(s.linkedElement,binding.etype)).size()>0) ){
+						"===>Found ".concat(tl.name).concat(" for type of ").concat(binding.name).concat(" (Source)").println();
+						if(newsource.isUndefined()){
+							newsource=new traceabilityOUT!FeatureSourceElement;
+						}
+						for (target in tl.targetElem) { 
+							if( target.linkedElement.isDefined()){
+							
+								newsource.linkedElement=binding.searchFeatureinEvo(source).ifUndefined(target);
+							}else{
+							
+							for(flink in target.links){
+								for(ne in self.nestedElement){
+										
+									if(flink.sourceElem.select(s|emfTool.ecoreUtil.equals(s.linkedElement,ne.linkedElement.first)).size()>0){
+											"-->Found ".concat(flink.name).concat(" applied to ").concat(ne.linkedElement.first.name).concat(" (Source)").println();
+											newsource.linkedElement=flink.targetElem;
+										}	
+									}
+								
+								}
+							}
+						}
+						newsources.add(newsource);
+						}
+				}else{
+				//feature untouched -->copy it
+					if(binding.isDefined()){
+					var newsource : traceabilityOUT!FeatureSourceElement=new traceabilityOUT!FeatureSourceElement;
+					
+					newsource.linkedElement=binding.searchFeatureinEvo(source).ifUndefined(binding);
+					newsources.add(newsource);
+					}	
+				}
+	
+}
+		
+	if(newsources.size()>0) return newsources;
+	//copy untouched tracelinks sources
+	for (s in self) { 
+		if(s.linkedElement.isDefined()){
+				var newsource : traceabilityOUT!FeatureSourceElement=new traceabilityOUT!FeatureSourceElement;
+				
+				newsource.linkedElement=s.linkedElement.searchFeatureinEvo(s).ifUndefined(s.linkedElement);
+				//newsource.nestedElement::=self.nestedElement;
+				if(self.nestedElement.flatten().size()>0){
+				newsource.nestedElement=(self.nestedElement.flatten());
+				
+				}
+				newsources.add(newsource);
+			}
+		}
+		return newsources;		
+}
+
+operation traceabilityIN!EObject getTargetFeatureEvo(tracelink:traceabilityIN!FeatureTraceabilityLink): Any{
+var binding=self;
+
+var newsource : traceabilityOUT!EObject;
+var patterns=evoTrace!FeatureTraceabilityLink.allInstances()->select(etl|etl.sourceElem->select(se|emfTool.ecoreUtil.equals(se.linkedElement,binding)).size()>0);
+	
+	if(patterns.isDefined() and patterns.size()>0){
+	//patterns.println();
+		for(pattern in patterns){
+		//pattern.sourceElem.constraints.flatten().isEmpty().println();
+		"-->Found ".concat(pattern.name.ifUndefined("pattern with no name in trace model")).concat(" applied on ").concat(binding.name).concat("(Target)").println();
+		return pattern.targetElem;
+		}
+		
+		}
+
+	//copy untouched tracelinks sources
+
+			return self.searchTargetFeatureinEvo(tracelink);
+}
+
+operation traceabilityIN!EObject searchFeatureinEvo(s:traceabilityIN!FeatureSourceElement): Any{
+var containingClass=s.tracelink.owner.tracelink.sourceElem.linkedElement.first;
+
+var evolvedContainingClasses=evoTrace!ClassTraceabilityLink.allInstances().select(ctl|ctl.sourceElem->select(s|emfTool.ecoreUtil.equals(s.linkedElement,containingClass)).size()>0).targetElem.flatten().collect(le|le.linkedElement);
+	
+	if(self.isKindOf(traceabilityIN!EAttribute)){
+	
+		return evoMM!EAttribute.allInstances().select(f|f.name==self.name and f.etype==self.etype and ((f.econtainingClass.name==self.eContainingClass.name and f.econtainingClass.ePackage.name==self.eContainingClass.ePackage.name) or emfTool.ecoreUtil.equals(evolvedContainingClasses.first,f.eContainingClass)) ).first;
+	}else if(self.isKindOf(traceabilityIN!EReference)){
+	
+	
+		return evoMM!EReference.allInstances().select(f|f.name==self.name and f.etype.name==self.etype.name  and ((f.econtainingClass.name==self.eContainingClass.name and f.econtainingClass.ePackage.name==self.eContainingClass.ePackage.name) or emfTool.ecoreUtil.equals(evolvedContainingClasses.first,(f.eContainingClass)))).first;
+	}else{
+		return self;
+	}
+	
+}
+
+operation traceabilityIN!EObject searchTargetFeatureinEvo(tracelink:traceabilityIN!FeatureTraceabilityLink): Any{
+var containingClass=tracelink.owner.tracelink.targetElem.linkedElement.first;
+
+var evolvedContainingClasses=evoTrace!ClassTraceabilityLink.allInstances().select(ctl|ctl.sourceElem->select(s|emfTool.ecoreUtil.equals(s.linkedElement,containingClass)).size()>0).targetElem.flatten().collect(le|le.linkedElement);
+	if(evolvedContainingClasses.size()>0){
+	if(self.isKindOf(traceabilityIN!EAttribute)){
+	//self.println();
+		return evoMM!EAttribute.allInstances().select(f|f.name==self.name and f.etype==self.etype and ((f.econtainingClass.name==self.eContainingClass.name) or emfTool.ecoreUtil.equals(evolvedContainingClasses.first,f.eContainingClass)) ).first;
+	}else if(self.isKindOf(traceabilityIN!EReference)){
+	//self.println();
+	
+		return evoMM!EReference.allInstances().select(f|f.name==self.name and f.etype.name==self.etype.name  and ((f.econtainingClass.name==self.eContainingClass.name) or emfTool.ecoreUtil.equals(evolvedContainingClasses.first,(f.eContainingClass)))).first;
+	}
+	
+	}else{
+	
+	return self;
+	
+	}
+	
+}
